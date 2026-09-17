@@ -8,9 +8,32 @@ JumperlessV5light simplifies hardware complexity and manufacturing costs while p
 
 ### Key Objectives
 - **Single-Sided Attachment:** Connect seamlessly to one side (e.g., top/bottom rows 1–30 or 1–60) of a standard off-the-shelf breadboard without requiring custom replacement spring clip shells.
-- **Microcontroller Core:** Replace the onboard surface-mount RP2350 IC with a standard, removable **Raspberry Pi Pico 2** microcontroller board.
-- **Modular Matrix Scaling:** Support hardware variants populated with **1, 4, or all (12) CH446Q** analog crosspoint switch ICs to accommodate various price points and application requirements.
+- **Microcontroller Core:** Replace the onboard surface-mount RP2350 IC with a standard, removable **Raspberry Pi Pico 2** microcontroller board (RP2350).
+- **Modular Matrix Scaling:** Support hardware variants populated with **1, 2, 4, or all (12) CH446Q** analog crosspoint switch ICs to accommodate various price points and application requirements.
+- **Minimal Viable Product (MVP Datamatrix):** Provide a stripped-down, pure crosspoint switching datamatrix in Phase 1 that removes auxiliary measurement ADCs, DACs, ±8V rails, and active probing while maintaining strict firmware and netlist routing compatibility.
 - **Subset Wiring Routing Compatibility:** Ensure signal routing and netlist representations remain a strict subset of the existing Jumperless V5 wiring scheme and firmware infrastructure.
+
+---
+
+## Minimal Viable Product (MVP) Strategy: Pure Datamatrix
+
+To minimize initial manufacturing complexity and BOM cost, JumperlessV5light introduces a phased evolution model. The initial release (Phase 1 MVP) focuses strictly on functioning as a pure **software-configurable datamatrix**.
+
+### MVP Component Scope & Optimization
+- **Included in MVP:**
+  - Raspberry Pi Pico 2 host controller (RP2350).
+  - 1, 2, or 4 CH446Q crosspoint switch array (and scalable up to 12 in full layout).
+  - SPI control bus for crossbar matrix addressing.
+  - Basic 3.3V / 5V power passthrough and single-sided breadboard edge headers.
+  - Standard USB CDC Serial CLI netlist parser (`f {node1-node2, ...}`).
+- **Omitted from MVP (Deferred to Later Iterations):**
+  - ±8V programmable power supplies and DAC buffers.
+  - 12-bit ADC voltage/current/resistance measurement channels.
+  - INA219 current and voltage sensing ICs.
+  - Active resistive probe jack and high-voltage op-amp buffers.
+- **Firmware & Netlist Compatibility:**
+  - The MVP firmware parses standard Jumperless netlists identically.
+  - Routing algorithms map connection requests to available CH446Q switches (1, 2, or 4 chips) and silently ignore or flag requests requiring deferred measurement hardware.
 
 ---
 
@@ -22,20 +45,20 @@ Traditional breadboard prototyping suffers from high friction due to wire clutte
 
 **JumperlessV5light** addresses these commercial and operational goals:
 1. **Lower Bill of Materials (BOM) & Manufacturing Cost:** Utilizing off-the-shelf Raspberry Pi Pico 2 modules eliminates chip-down RP2350 placement complexity and reduces board layer counts.
-2. **Tiered Product Offerings:** Modular support for 1, 4, or 12 CH446Q switches enables tiered entry pricing (Entry, Standard, Advanced) targeting students, makers, and professional engineers.
+2. **Tiered Product Offerings:** Modular support for 1, 2, 4, or 12 CH446Q switches enables tiered entry pricing (Entry, Standard, Advanced) targeting students, makers, and professional engineers.
 3. **Broadened Breadboard Compatibility:** By attaching externally to standard breadboards on one side, users can keep existing hardware components in place and reuse standard lab breadboards.
 4. **Maintenance & Repairability:** Socketed Pico 2 modules allow effortless replacement if an MCU is damaged during high-voltage experimentation.
 
 ### Use Cases
 
-#### UC-1: Basic Automated Signal Routing (1 CH446Q Variant)
+#### UC-1: Basic Automated Signal Routing (1 CH446Q MVP Datamatrix Variant)
 - **Actor:** STEM Student / Hobbyist.
 - **Description:** Route up to 8 dual-node software jumper connections across key breadboard rows and power channels.
 - **Outcome:** Teaches basic circuit concepts and automated netlist routing at minimal cost.
 
-#### UC-2: Sub-System Prototyping & Audio/Sensor Matrix (4 CH446Q Variant)
+#### UC-2: Sub-System Prototyping & Audio/Sensor Matrix (2 or 4 CH446Q MVP Variant)
 - **Actor:** Electronics Maker / Audio Designer.
-- **Description:** Dynamically switch audio signals, sensor inputs, and power rails across 16–32 breadboard nodes.
+- **Description:** Dynamically switch audio signals, sensor inputs, and power rails across 16–32 breadboard nodes using a 2 or 4 CH446Q datamatrix.
 - **Outcome:** Rapid iteration of signal-chain blocks without manually rewiring component leads.
 
 #### UC-3: Full Single-Side Jumperless Prototyping (12 CH446Q Variant)
@@ -50,7 +73,7 @@ Traditional breadboard prototyping suffers from high friction due to wire clutte
 
 #### UC-5: Scripted Hardware-in-the-Loop Testing
 - **Actor:** Automated Test Engineer / MicroPython Developer.
-- **Description:** Execute Python or CLI scripts to reconfigure breadboard nets, run parametric voltage/current sweeps, and verify device behavior automatically.
+- **Description:** Execute Python or CLI scripts to reconfigure breadboard nets automatically.
 - **Outcome:** Reproducible automated testing of analog/digital components.
 
 ---
@@ -61,19 +84,19 @@ Traditional breadboard prototyping suffers from high friction due to wire clutte
 
 ```
  +-------------------------------------------------------------------+
- |                   JumperlessV5light Board                         |
+ |             JumperlessV5light Board (Phase 1 MVP)                 |
  |                                                                   |
  |  +-----------------------+      +------------------------------+  |
- |  |  Raspberry Pi Pico 2  | SPI  |  CH446Q Switch Matrix Array  |  |
- |  |  (RP2350 Host MCU)    |----->|  (1, 4, or 12 ICs)          |  |
+ |  |  Raspberry Pi Pico 2  | SPI  |  CH446Q Datamatrix Matrix    |  |
+ |  |  (RP2350 Host MCU)    |----->|  (1, 2, or 4 ICs in MVP)    |  |
  |  +-----------------------+      +------------------------------+  |
  |              |                                |                   |
- |     USB /    | GPIO &                         | Crosspoint        |
- |     Serial   | Measurement                    | Connections       |
+ |     USB /    | Logic /                        | Crosspoint        |
+ |     Serial   | Passthrough                    | Connections       |
  |              v                                v                   |
  |  +-----------------------+      +------------------------------+  |
- |  |  Power & Level Shift  |      |  Single-Side Breadboard      |  |
- |  |  (±8V Supplies, ADCs) |      |  Header & Probe Interface    |  |
+ |  |  Basic Power Rail     |      |  Single-Side Breadboard      |  |
+ |  |  (3.3V / 5V Bus)      |      |  Header Interface            |  |
  |  +-----------------------+      +------------------------------+  |
  +-------------------------------------------------------------------+
                                                  |
@@ -93,27 +116,25 @@ Traditional breadboard prototyping suffers from high friction due to wire clutte
   - `SPI Matrix Bus Interface`: High-speed serial control interface driving address latches on CH446Q switches.
 
 #### 2. Matrix Switching Network Component
-- **Description:** Analog crosspoint matrix composed of 1, 4, or 12 CH446Q ICs. Connects arbitrary breadboard nodes on the target side to internal power, measurement, and GPIO channels.
+- **Description:** Analog crosspoint matrix composed of 1, 2, 4, or 12 CH446Q ICs. Connects arbitrary breadboard nodes on the target side.
 - **Business Interface:**
   - `Crosspoint Route Interface`: Set or clear analog switch connections based on computed crossbar addresses.
-  - `Subset Compatibility Layer`: Maps netlist requests down to available hardware chip counts (1, 4, or 12 ICs).
+  - `Subset Compatibility Layer`: Maps netlist requests down to available hardware chip counts (1, 2, or 4 ICs in MVP).
 
-#### 3. Power Supply & Level Shifting Component
-- **Description:** Generates ±8V rails for switch matrix operation and buffers DAC/ADC measurement channels.
+#### 3. Power Supply & Logic Interface Component
+- **Description:** Provides standard 3.3V and 5V power routing to breadboard rails for MVP, deferring high-voltage ±8V DAC supplies to later iterations.
 - **Business Interface:**
-  - `Programmable Power Rail Interface`: Software-controlled DAC output lines (±8V).
-  - `Analog Sensing Interface`: Level-shifted ADC inputs for voltage, current, and resistance probing.
+  - `Power Rail Interface`: Fixed 3.3V / 5V power pass-through to breadboard rails.
 
 #### 4. Single-Side Breadboard Connection Component
 - **Description:** Precision pin-header assembly physically mating JumperlessV5light to row pins on one edge of a standard breadboard and Nano header.
 - **Business Interface:**
   - `Breadboard Node Interface`: Direct analog/digital pin connectivity to breadboard rows 1–30/1–60.
 
-#### 5. Interactive Probing & User Interaction Component
-- **Description:** Manages voltage-divider resistance probing and status LED indication.
+#### 5. Interactive User Interaction Component
+- **Description:** Basic status LED indication for active netlist connections.
 - **Business Interface:**
-  - `Probe Interface`: TRRRS probe jack sensing row selections via resistive tap.
-  - `LED Matrix Status Interface`: Visual indication of active connections, voltages, and slot states.
+  - `LED Matrix Status Interface`: Visual indication of active connections and slot states.
 
 ---
 
@@ -135,8 +156,8 @@ Using the Pico 2 DIP module dramatically lowers assembly risk, leverages mass-pr
 ### Choice 2: Matrix Crosspoint Switch Scaling & Hardware Variants
 
 - **Alternative 1 (Fixed 12 x CH446Q Matrix Only):** Single rigid hardware design with all 12 CH446Q ICs permanently required.
-- **Alternative 2 (Unified PCB Footprint for 1, 4, or 12 CH446Q Variants) [SELECTED]:** A single PCB design accommodating solder populating 1, 4, or 12 CH446Q ICs, coupled with firmware that gracefully handles subset wiring.
-- **Alternative 3 (Three Separate PCB Layouts):** Design three completely distinct PCBs for 1-chip, 4-chip, and 12-chip configurations.
+- **Alternative 2 (Unified PCB Footprint for 1, 2, 4, or 12 CH446Q Variants) [SELECTED]:** A single PCB design accommodating solder populating 1, 2, 4, or 12 CH446Q ICs, coupled with firmware that gracefully handles subset wiring.
+- **Alternative 3 (Three Separate PCB Layouts):** Design three completely distinct PCBs for 1-chip, 2/4-chip, and 12-chip configurations.
 
 #### Justification for Alternative 2 (Selected)
 A unified PCB layout with unpopulated IC options minimizes engineering overhead, streamlines manufacturing inventory, and allows software subset mapping to seamlessly scale routing capability based on populated hardware.

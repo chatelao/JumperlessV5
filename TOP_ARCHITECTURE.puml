@@ -1,0 +1,53 @@
+@startuml TOP_ARCHITECTURE
+!theme plain
+skinparam componentStyle uml2
+skinparam packageStyle rectangle
+
+title JumperlessV5light - Top-Level System Architecture
+
+package "Host Computer / External Environment" {
+    [Terminal Emulator / Host Script] as HostPC
+}
+
+package "JumperlessV5light Board" {
+
+    package "Microcontroller Core Subsystem (Raspberry Pi Pico 2 - RP2350)" {
+        [USB CDC Serial CLI Interface] as USBCLI
+        [Netlist Parser & Router Engine] as RouterEngine
+        [SPI Crossbar Driver] as SPIDriver
+        [Status LED Controller] as LEDCtrl
+    }
+
+    package "Matrix Switching Subsystem" {
+        [CH446Q Analog Crosspoint Matrix\n(1, 2, 4, or 12 ICs)] as SwitchMatrix
+    }
+
+    package "Power Infrastructure Subsystem" {
+        [Power Passthrough Bus\n(3.3V / 5V Rail Routing)] as PowerBus
+    }
+
+    package "Physical Header Subsystem" {
+        [Single-Sided Breadboard Edge Header\n(Rows 1–30 / 1–60 + Nano Header)] as EdgeHeader
+        [Status LED Array] as LEDArray
+    }
+}
+
+node "Target Standard Breadboard" {
+    [Breadboard Spring Clip Rows] as BBRows
+}
+
+' Dataflow and Interface Connections
+HostPC <--> USBCLI : USB CDC Serial (ASCII Commands / Netlists)
+USBCLI --> RouterEngine : Netlist String (`f {node1-node2, ...}`)
+RouterEngine --> SPIDriver : Crosspoint Address Coordinates (X/Y Data & Strobe)
+SPIDriver --> SwitchMatrix : SPI Bus (SCLK, MOSI, Chip Select / Latches)
+
+RouterEngine --> LEDCtrl : Matrix Connection State Updates
+LEDCtrl --> LEDArray : GPIO / Single-Wire Serial (WS2812/XL-1010)
+
+PowerBus --> EdgeHeader : Power Pass-Through (3.3V / 5V VCC)
+SwitchMatrix <--> EdgeHeader : Analog Crosspoint Channel Connections (X/Y Nodes)
+
+EdgeHeader <--> BBRows : Single-Sided Edge Pin Headers
+
+@enduml

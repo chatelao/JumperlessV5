@@ -1,0 +1,47 @@
+@startuml TOP_ARCHITECTURE
+!theme plain
+title Jumperless V5-light Top-Level System Architecture
+
+package "Host Computer / External System" {
+    [CLI Client] as CLI
+    [REST API Client / Web UI] as REST
+}
+
+package "Jumperless V5-light Hardware Unit" {
+    package "Control & Processing System" {
+        [RP2350 Microcontroller Core] as MCU
+        [PIO Crosspoint Controller Engine] as PIO
+        [USB Gateway & Command Parser] as USB
+    }
+
+    package "Analog Switching Core" {
+        [CH446Q Crosspoint Matrix Array] as MATRIX
+    }
+
+    package "Power Subsystem" {
+        [LT1054 Charge-Pump Power Rails (+/-8V)] as POWER
+    }
+
+    package "Breadboard Border Connection Interface" {
+        [Edge Header / Pin Strip] as EDGE
+        [Measurement ADC / Voltage Sensing] as SENSE
+    }
+}
+
+package "Target Solderless Breadboard" {
+    [Tie-Points & Power Rails] as BB_NODES
+}
+
+CLI --> USB : USB CDC / Serial Commands
+REST --> USB : REST / JSON Commands over Serial Bridge
+USB --> MCU : Parsed Commands & Netlists
+MCU --> PIO : Matrix Route Instructions (X/Y/Data/Strobe)
+PIO --> MATRIX : Hardware Control Lines
+POWER --> MATRIX : Dual Supply (+/- 8V Overdrive)
+MCU --> POWER : Rail Enable / DAC Control
+MATRIX --> EDGE : Analog Routing Paths
+EDGE --> BB_NODES : Connection to Breadboard Pins
+SENSE <-- EDGE : Analog Voltage & Resistance Sensing
+MCU <-- SENSE : 12-bit ADC Readings
+
+@enduml

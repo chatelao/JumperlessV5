@@ -1,0 +1,230 @@
+openapi: 3.0.3
+info:
+  title: Jumperless V5-light REST API
+  description: |
+    REST API for controlling and monitoring the **Jumperless V5-light** hardware unit.
+    Provides endpoints for crossbar route management, netlist query, node configuration, and board status monitoring.
+  version: 1.0.0
+  contact:
+    name: Jumperless Hardware Engineering
+    url: https://github.com/Architeuthis-Flux/JumperlessV5
+servers:
+  - url: http://localhost:8080/api/v1
+    description: Local V5-light REST API Bridge Server
+
+paths:
+  /status:
+    get:
+      summary: Retrieve hardware status and rail telemetry
+      description: Returns the health, rail voltages, active connections count, and RP2350 system metrics.
+      operationId: getStatus
+      responses:
+        '200':
+          description: Successful response returning board status
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BoardStatus'
+
+  /routes:
+    get:
+      summary: Get all active matrix routes
+      description: Returns a list of all currently established analog switch connections between breadboard nodes.
+      operationId: getRoutes
+      responses:
+        '200':
+          description: List of active routes
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Route'
+    post:
+      summary: Establish a new connection route
+      description: Connects two or more tie-points or power rails together through the CH446Q matrix switch array.
+      operationId: createRoute
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RouteRequest'
+      responses:
+        '201':
+          description: Route successfully created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Route'
+        '400':
+          description: Invalid node or routing collision error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+    delete:
+      summary: Disconnect a route or reset all connections
+      description: Removes specific node connections or clears the entire crossbar matrix switch state.
+      operationId: deleteRoutes
+      parameters:
+        - name: node_a
+          in: query
+          required: false
+          schema:
+            type: string
+          description: First node name to disconnect (e.g. "1")
+        - name: node_b
+          in: query
+          required: false
+          schema:
+            type: string
+          description: Second node name to disconnect (e.g. "15")
+        - name: all
+          in: query
+          required: false
+          schema:
+            type: boolean
+          description: If true, clears all active matrix routes on the device.
+      responses:
+        '200':
+          description: Connection(s) successfully removed
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Routes cleared successfully"
+
+  /nets:
+    get:
+      summary: Retrieve current netlist configuration
+      description: Returns the current parsed netlist representing connected component clusters.
+      operationId: getNets
+      responses:
+        '200':
+          description: Current active netlist
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NetList'
+
+components:
+  schemas:
+    BoardStatus:
+      type: object
+      required:
+        - device_id
+        - firmware_version
+        - status
+        - active_routes_count
+        - power_rails
+      properties:
+        device_id:
+          type: string
+          example: "JUMPERLESS-V5-LIGHT-001"
+        firmware_version:
+          type: string
+          example: "1.0.0-light"
+        status:
+          type: string
+          enum: [READY, BUSY, ERROR]
+          example: "READY"
+        active_routes_count:
+          type: integer
+          example: 4
+        power_rails:
+          type: object
+          properties:
+            vplus_volts:
+              type: number
+              format: float
+              example: 5.0
+            vminus_volts:
+              type: number
+              format: float
+              example: -5.0
+            vbus_volts:
+              type: number
+              format: float
+              example: 5.02
+
+    Route:
+      type: object
+      required:
+        - route_id
+        - node_a
+        - node_b
+        - chip_id
+        - resistance_ohms
+      properties:
+        route_id:
+          type: string
+          example: "route_1_15"
+        node_a:
+          type: string
+          example: "1"
+        node_b:
+          type: string
+          example: "15"
+        chip_id:
+          type: integer
+          example: 0
+        resistance_ohms:
+          type: number
+          format: float
+          example: 88.5
+
+    RouteRequest:
+      type: object
+      required:
+        - node_a
+        - node_b
+      properties:
+        node_a:
+          type: string
+          description: Identifier for first breadboard node/pin (e.g. "1", "TOP_RAIL", "GPIO0")
+          example: "1"
+        node_b:
+          type: string
+          description: Identifier for second breadboard node/pin (e.g. "15", "BOTTOM_RAIL")
+          example: "15"
+
+    NetList:
+      type: object
+      required:
+        - net_count
+        - nets
+      properties:
+        net_count:
+          type: integer
+          example: 2
+        nets:
+          type: array
+          items:
+            type: object
+            properties:
+              net_id:
+                type: integer
+                example: 1
+              nodes:
+                type: array
+                items:
+                  type: string
+                example: ["1", "15", "TOP_RAIL"]
+
+    ErrorResponse:
+      type: object
+      required:
+        - code
+        - error
+      properties:
+        code:
+          type: integer
+          example: 400
+        error:
+          type: string
+          example: "Invalid node specifier 'NODE_INVALID'"

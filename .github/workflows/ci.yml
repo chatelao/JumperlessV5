@@ -1,0 +1,47 @@
+name: V5-light CI/CD Pipeline
+
+on:
+  push:
+    branches: ['*']
+  pull_request:
+    branches: ['*']
+
+jobs:
+  test-and-verify:
+    name: Build & Test V5-light System
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Cache Pip Packages
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-${{ hashFiles('src/install.sh', 'test/install.sh') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-
+
+      - name: Install Application Build Dependencies
+        run: |
+          chmod +x src/install.sh
+          ./src/install.sh
+
+      - name: Install Test Dependencies
+        run: |
+          chmod +x test/install.sh
+          ./test/install.sh
+
+      - name: Run V5-light Automated Test Suite
+        run: |
+          PYTHONPATH=. python3 -m pytest -v test/ --cov=src
+
+      - name: Validate OpenAPI Definition Syntax
+        run: |
+          python3 -c "import yaml; yaml.safe_load(open('api/openapi.yaml'))"

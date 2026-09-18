@@ -7,6 +7,7 @@ DEFINES_HEADER = os.path.join(FIRMWARE_DIR, "JumperlessDefines.h")
 MATRIX_STATE_CPP = os.path.join(FIRMWARE_DIR, "MatrixState.cpp")
 CONCEPT_MD = os.path.join(os.path.dirname(__file__), "..", "CONCEPT.md")
 DESIGN_MD = os.path.join(os.path.dirname(__file__), "..", "DESIGN.md")
+ROADMAP_MD = os.path.join(os.path.dirname(__file__), "..", "ROADMAP.md")
 
 
 def read_file_content(path):
@@ -90,3 +91,23 @@ def test_concept_subset_wiring_compatibility():
     assert "Subset Wiring Routing Compatibility" in concept_content or "subset of the existing Jumperless V5 wiring" in concept_content
     # Must specify single-sided breadboard connection
     assert "Single-Sided" in concept_content or "single side" in concept_content
+
+
+def test_roadmap_structure_and_mvp_scope():
+    """Verify that ROADMAP.md exists and adheres to GEMINI.md structure and MVP with 1 or 2 CH446Q."""
+    assert os.path.exists(ROADMAP_MD), "ROADMAP.md file does not exist"
+    roadmap_content = read_file_content(ROADMAP_MD)
+
+    # Required sections
+    assert "Progress Overview" in roadmap_content
+    assert "Goals" in roadmap_content
+    assert "Phases" in roadmap_content
+
+    # Status emojis / formatting
+    assert "✅" in roadmap_content
+    assert "🚧" in roadmap_content
+    assert "⏳" in roadmap_content
+
+    # MVP scope for 1 or 2 CH446Q switches
+    assert "1 or 2 CH446Q" in roadmap_content or "1–2 CH446Q" in roadmap_content
+    assert "Phase 1: MVP Datamatrix" in roadmap_content
